@@ -1,0 +1,30 @@
+# Publica o instalador leve do Trix Client (Trix-Client-Setup.exe) como release desta página.
+# O arquivo vem do servidor de atualizações do Trix Client: Actions → Publicar instalador → Run workflow.
+name: Publicar instalador
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão do Trix Client (ex.: 3.0.0)"
+        required: true
+permissions:
+  contents: write
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o instalador e publicar a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          curl -fL --retry 6 --retry-delay 20 --retry-all-errors -o Trix-Client-Setup.exe \
+            "https://trix-client-2-2-8.onrender.com/updates/Trix-Client-Setup-${VERSION}.exe"
+          test "$(stat -c %s Trix-Client-Setup.exe)" -gt 100000
+          if gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "v${VERSION}" Trix-Client-Setup.exe --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "v${VERSION}" Trix-Client-Setup.exe --repo "$GITHUB_REPOSITORY" \
+              --title "Trix Client ${VERSION}" --latest \
+              --notes "Instalador leve do Trix Client ${VERSION} para Windows. Baixe Trix-Client-Setup.exe e abra: ele baixa e instala a versão mais recente, e depois o launcher se atualiza sozinho."
+          fi
